@@ -1,0 +1,135 @@
+import pandas as pd
+import networkx as nx
+import heapq
+import math
+import random
+import time
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import accuracy_score
+
+# Haversine Distance Calculation
+def haversine(lat1, lon1, lat2, lon2):
+    R = 6371  # Earth radius in km
+    dlat = math.radians(lat2 - lat1)
+    dlon = math.radians(lat2 - lon2)
+    a = math.sin(dlat/2)**2 + math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.sin(dlon/2)**2
+    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1-a))
+    return R * c
+
+# A* Algorithm for Route Planning
+def a_star(graph, start, end, hazards):
+    open_set = []
+    heapq.heappush(open_set, (0, start))
+    came_from = {}
+    g_score = {node: float('inf') for node in graph.nodes}
+    g_score[start] = 0
+    f_score = {node: float('inf') for node in graph.nodes}
+    f_score[start] = haversine(*start, *end)
+
+    while open_set:
+        _, current = heapq.heappop(open_set)
+
+        if current == end:
+            path = []
+            while current in came_from:
+                path.append(current)
+                current = came_from[current]
+            path.append(start)
+            return path[::-1]  # Reverse path
+
+        for neighbor in graph.neighbors(current):
+            hazard_penalty = hazards.get(neighbor, 0)  # Increase cost if hazard detected
+            tentative_g_score = g_score[current] + graph[current][neighbor]['weight'] + hazard_penalty
+
+            if tentative_g_score < g_score[neighbor]:
+                came_from[neighbor] = current
+                g_score[neighbor] = tentative_g_score
+                f_score[neighbor] = tentative_g_score + haversine(*neighbor, *end)
+                heapq.heappush(open_set, (f_score[neighbor], neighbor))
+
+    return None  # No path found
+
+# Load CSV File
+csv_file_path = "/content/processed_navigation.csv"  # Change to your actual file path
+df = pd.read_csv(csv_file_path)
+df.columns = df.columns.str.strip()
+
+# Convert hazard_detected column to binary (Yes = 1, No = 0)
+df['hazard_detected'] = df['hazard_detected'].apply(lambda x: 1 if x == "Yes" else 0)
+
+# Select Features & Target for Training
+features = [
+    "feature_extracted_Road surface",
+    "feature_extracted_Object Detection",
+    "feature_extracted_Traffic flow",
+    "weather_Rainy",
+    "weather_Foggy"
+]
+target = "hazard_detected"
+
+# Train-Test Split
+X_train, X_test, y_train, y_test = train_test_split(df[features], df[target], test_size=0.2, random_state=42)
+
+# Train Hazard Prediction Model (RandomForest)
+clf = RandomForestClassifier(n_estimators=200, random_state=42)
+clf.fit(X_train, y_train)
+
+# Predict on Test Data
+y_pred = clf.predict(X_test)
+
+# Calculate Model Accuracy
+accuracy = accuracy_score(y_test, y_pred)
+print(f"\n✅ Hazard Prediction Model Accuracy: {accuracy * 100:.2f}%")
+
+# Build Road Graph
+G = nx.Graph()
+
+# Add Nodes (Waypoints) from CSV
+for _, row in df.iterrows():
+    node = (row["latitude"], row["longitude"])
+    G.add_node(node)
+
+# Connect Nearby Nodes (Roads)
+nodes_list = list(G.nodes)
+for i in range(len(nodes_list)):
+    for j in range(i + 1, len(nodes_list)):
+        distance = haversine(*nodes_list[i], *nodes_list[j])
+        if distance < 5:  # Connect if within 5 km
+            G.add_edge(nodes_list[i], nodes_list[j], weight=distance)
+
+# Real-time Hazard Update Function
+def update_hazards(df):
+    """
+    Simulates real-time hazard changes every 5 seconds.
+    Updates hazard column dynamically.
+    """
+    print("\n🔄 Updating Hazard Data in Real-Time...")
+    df["hazard_detected"] = clf.predict(df[features])  # Use model to predict hazards
+    return df
+
+# Run Real-Time Simulation
+for i in range(3):  # Simulate real-time updates 3 times
+    df = update_hazards(df)  # Update hazard data dynamically
+
+    # Process Updated Hazards
+    hazards = {}
+    for _, row in df.iterrows():
+        node = (row["latitude"], row["longitude"])
+        if row["hazard_detected"] == 1:
+            hazards[node] = 50  # Assign VERY HIGH cost to hazardous areas
+
+    # Run A* Algorithm for Safe Route
+    start, end = (23.2691, 77.4234), (23.2876, 77.4419)  # Example Start & End
+    safe_route = a_star(G, start, end, hazards)
+
+    # Display Safe Route
+    if safe_route:
+        print("\n🔹 Safe Route Found:\n")
+        for point in safe_route:
+            print(f"📍 Latitude: {point[0]}, Longitude: {point[1]}")
+    else:
+        print("\n⚠️ No Safe Route Available!")
+
+    # Wait before next update
+    time.sleep(5)  # Simulate real-time delay
