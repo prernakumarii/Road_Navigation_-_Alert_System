@@ -1,0 +1,119 @@
+import pandas as pd
+import networkx as nx
+import heapq
+import math
+import random
+import time
+from sklearn.metrics import accuracy_score
+
+# Haversine Distance Calculation
+def haversine(lat1, lon1, lat2, lon2):
+    R = 6371  # Earth radius in km
+    dlat = math.radians(lat2 - lat1)
+    dlon = math.radians(lon2 - lon1)
+    a = math.sin(dlat/2)**2 + math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.sin(dlon/2)**2
+    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1-a))
+    return R * c
+
+# A* Algorithm with Hazard Avoidance
+def a_star(graph, start, end, hazards):
+    open_set = []
+    heapq.heappush(open_set, (0, start))
+    came_from = {}
+    g_score = {node: float('inf') for node in graph.nodes}
+    g_score[start] = 0
+    f_score = {node: float('inf') for node in graph.nodes}
+    f_score[start] = haversine(*start, *end)
+
+    while open_set:
+        _, current = heapq.heappop(open_set)
+
+        if current == end:
+            path = []
+            while current in came_from:
+                path.append(current)
+                current = came_from[current]
+            path.append(start)  # Include start point
+            return path[::-1]  # Reverse path
+
+        for neighbor in graph.neighbors(current):
+            hazard_penalty = hazards.get(neighbor, 0)  # Increase cost if hazard detected
+            tentative_g_score = g_score[current] + graph[current][neighbor]['weight'] + hazard_penalty
+
+            if tentative_g_score < g_score[neighbor]:
+                came_from[neighbor] = current
+                g_score[neighbor] = tentative_g_score
+                f_score[neighbor] = tentative_g_score + haversine(*neighbor, *end)
+                heapq.heappush(open_set, (f_score[neighbor], neighbor))
+
+    return None  # No path found
+
+# Real-time Hazard Simulation
+def update_hazards(df):
+    """
+    Simulates real-time hazard changes every 5 seconds.
+    Randomly updates some locations as hazardous.
+    """
+    print("\n🔄 Updating Hazard Data in Real-Time...")
+    for i in range(len(df)):
+        df.loc[i, "hazard_detected"] = "Yes" if random.random() < 0.3 else "No"  # 30% chance of hazard
+    return df
+
+# Accuracy Calculation
+def calculate_accuracy(df, predicted_hazards):
+    """
+    Compares predicted hazards with actual hazards in dataset.
+    """
+    true_labels = df["hazard_detected"].apply(lambda x: 1 if x == "Yes" else 0).values
+    accuracy = accuracy_score(true_labels, predicted_hazards)
+    print(f"\n✅ Model Accuracy: {accuracy * 100:.2f}%")
+    return accuracy
+
+# Read CSV Data
+csv_file_path = "/content/processed_navigation.csv"  # Change to actual file path
+df = pd.read_csv(csv_file_path)
+df.columns = df.columns.str.strip()
+
+# Create Graph from Latitude/Longitude
+G = nx.Graph()
+for _, row in df.iterrows():
+    node = (row["latitude"], row["longitude"])
+    G.add_node(node)
+
+# Connect Nearby Nodes
+nodes_list = list(G.nodes)
+for i in range(len(nodes_list)):
+    for j in range(i + 1, len(nodes_list)):
+        distance = haversine(*nodes_list[i], *nodes_list[j])
+        if distance < 5:  # Connect if within 5 km
+            G.add_edge(nodes_list[i], nodes_list[j], weight=distance)
+
+# Run Real-Time Simulation
+for i in range(3):  # Simulate real-time updates 3 times
+    df = update_hazards(df)  # Update hazard data dynamically
+
+    # Process Updated Hazards
+    hazards = {}
+    for _, row in df.iterrows():
+        node = (row["latitude"], row["longitude"])
+        if row["hazard_detected"] == "Yes":
+            hazards[node] = 10  # Assign high cost to hazardous areas
+
+    # Run A* Algorithm for Safe Route
+    start, end = (23.2691, 77.4234), (23.2876, 77.4419)  # Example Start & End
+    safe_route = a_star(G, start, end, hazards)
+
+    # Simulated Predictions (Random for now)
+    predicted_hazards = [random.choice([0, 1]) for _ in range(len(df))]
+    accuracy = calculate_accuracy(df, predicted_hazards)
+
+    # Display Safe Route
+    if safe_route:
+        print("\n🔹 Safe Route Found:\n")
+        for point in safe_route:
+            print(f"📍 Latitude: {point[0]}, Longitude: {point[1]}")
+    else:
+        print("\n⚠️ No Safe Route Available!")
+
+    # Wait before next update
+    time.sleep(5)  # Simulate real-time delay
