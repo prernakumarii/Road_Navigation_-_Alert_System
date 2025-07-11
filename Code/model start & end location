@@ -1,0 +1,221 @@
+# ------------------ SETUP ------------------
+!pip install pandas numpy scikit-learn matplotlib networkx tensorflow folium
+
+# ------------------ IMPORTS ------------------
+import pandas as pd
+import numpy as np
+import networkx as nx
+import folium
+from folium.plugins import MarkerCluster
+from sklearn.preprocessing import LabelEncoder, MinMaxScaler
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestClassifier
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import LSTM, Dense
+from tensorflow.keras.preprocessing.sequence import TimeseriesGenerator
+from google.colab import files
+import json
+import re
+
+# ------------------ LOAD DATA ------------------
+uploaded = files.upload()
+df = pd.read_csv(next(iter(uploaded)))
+print("Loaded dataset shape:", df.shape)
+
+# ------------------ CLEANING ------------------
+df.columns = df.columns.str.lower().str.replace(' ', '_')
+df.ffill(inplace=True)
+if 'timestamp' in df.columns:
+    df['timestamp'] = pd.to_datetime(df['timestamp'], errors='coerce')
+    df['hour'] = df['timestamp'].dt.hour
+    df['day'] = df['timestamp'].dt.day
+    df['month'] = df['timestamp'].dt.month
+
+# Backup GPS data before scaling
+original_latlon = df[['latitude', 'longitude']].copy()
+
+# ------------------ SCALING ------------------
+scaler = MinMaxScaler()
+num_cols = df.select_dtypes(include=['float64', 'int64']).columns
+if 'latitude' in num_cols and 'longitude' in num_cols:
+    num_cols = num_cols.drop(['latitude', 'longitude'])
+df[num_cols] = scaler.fit_transform(df[num_cols])
+
+# Scale lat/lon separately
+latlon_scaler = MinMaxScaler()
+latlon_scaler.fit(original_latlon)
+df[['latitude', 'longitude']] = latlon_scaler.transform(original_latlon)
+
+# ------------------ DETECTION MODEL ------------------
+if 'hazard_type' not in df.columns:
+    df['hazard_type'] = np.random.choice(['safe', 'flood', 'construction'], size=len(df))
+target = 'hazard_type'
+features = [col for col in df.columns if col not in ['hazard_type'] and df[col].dtype in [np.float64, np.int64]]
+le = LabelEncoder()
+df[target] = le.fit_transform(df[target])
+X_train, X_test, y_train, y_test = train_test_split(df[features], df[target], test_size=0.2, random_state=42)
+clf = RandomForestClassifier(n_estimators=100)
+clf.fit(X_train, y_train)
+df['predicted_hazard'] = clf.predict(df[features])
+df['hazard_label'] = le.inverse_transform(df['predicted_hazard'])
+
+# ------------------ PREDICTION MODEL (LSTM) ------------------
+sequence_features = [col for col in ['temperature', 'humidity', 'rainfall'] if col in df.columns]
+if len(sequence_features) >= 2:
+    df_seq = df[sequence_features].dropna()
+    generator = TimeseriesGenerator(df_seq.values, df_seq.values, length=5, batch_size=1)
+    model = Sequential()
+    model.add(LSTM(64, activation='relu', input_shape=(5, len(sequence_features))))
+    model.add(Dense(len(sequence_features)))
+    model.compile(optimizer='adam', loss='mse')
+    model.fit(generator, epochs=5)
+    pred = model.predict(generator)
+    print("Predicted trend:", pred[-1])
+else:
+    pred = np.array([[0.0]*3])
+    print("Not enough data for LSTM prediction. Using fallback.")
+
+# ------------------ USER INPUT ------------------
+def extract_lat_lon_from_gmaps(url):
+    match = re.search(r'@(-?\d+\.\d+),(-?\d+\.\d+)', url)
+    if match:
+        return float(match.group(1)), float(match.group(2))
+    else:
+        print("Invalid Google Maps URL format. Expected '@lat,lon'.")
+        return None, None
+
+# START LOCATION
+print("\n\U0001F9ED Enter START location")
+if input("Do you have a Google Maps link? (y/n): ").lower() == 'y':
+    user_lat, user_lon = extract_lat_lon_from_gmaps(input("Paste Google Maps link: "))
+else:
+    user_lat = float(input("Latitude: "))
+    user_lon = float(input("Longitude: "))
+
+if user_lat is None or user_lon is None:
+    raise ValueError("User coordinates are invalid. Please re-enter manually or use a valid link.")
+
+# DESTINATION LOCATION
+print("\n\U0001F3AF Enter DESTINATION location")
+if input("Do you have a Google Maps link? (y/n): ").lower() == 'y':
+    dest_lat, dest_lon = extract_lat_lon_from_gmaps(input("Paste Google Maps link: "))
+else:
+    dest_lat = float(input("Latitude: "))
+    dest_lon = float(input("Longitude: "))
+
+if dest_lat is None or dest_lon is None:
+    raise ValueError("Destination coordinates are invalid. Please re-enter manually or use a valid link.")
+
+user_scaled = latlon_scaler.transform(np.array([[user_lat, user_lon]]).astype(float))[0]
+dest_scaled = latlon_scaler.transform(np.array([[dest_lat, dest_lon]]).astype(float))[0]
+
+user_index = len(df)
+df.loc[user_index] = df.iloc[0]
+df.loc[user_index, ['latitude', 'longitude']] = user_scaled
+df.loc[user_index, 'hazard_label'] = 'Start'
+df.loc[user_index, 'predicted_hazard'] = 0.0
+
+dest_index = len(df)
+df.loc[dest_index] = df.iloc[0]
+df.loc[dest_index, ['latitude', 'longitude']] = dest_scaled
+df.loc[dest_index, 'hazard_label'] = 'Destination'
+df.loc[dest_index, 'predicted_hazard'] = 0.0
+
+# ------------------ ROUTE OPTIMIZATION (A*) ------------------
+G = nx.Graph()
+for idx, row in df.iterrows():
+    G.add_node(idx, pos=(row['latitude'], row['longitude']), risk=row['predicted_hazard'])
+for i in range(len(df)-2):
+    dist = np.linalg.norm(np.array([df.loc[i, 'latitude'], df.loc[i, 'longitude']]) -
+                          np.array([df.loc[i+1, 'latitude'], df.loc[i+1, 'longitude']]))
+    traffic = df.loc[i].get('traffic_level', 0.1)
+    G.add_edge(i, i+1, weight=dist + G.nodes[i]['risk'] * 5 + traffic * 10)
+
+for i in range(min(3, len(df)-2)):
+    G.add_edge(user_index, i, weight=np.linalg.norm(np.array(G.nodes[user_index]['pos']) - np.array(G.nodes[i]['pos'])))
+    G.add_edge(dest_index, i, weight=np.linalg.norm(np.array(G.nodes[dest_index]['pos']) - np.array(G.nodes[i]['pos'])))
+
+path = nx.astar_path(G, user_index, dest_index, heuristic=lambda a, b: np.linalg.norm(np.array(G.nodes[a]['pos']) - np.array(G.nodes[b]['pos'])))
+route_df = df.loc[path]
+
+# ------------------ MAP RENDERING ------------------
+df[['latitude', 'longitude']] = latlon_scaler.inverse_transform(df[['latitude', 'longitude']])
+route_df[['latitude', 'longitude']] = latlon_scaler.inverse_transform(route_df[['latitude', 'longitude']])
+
+route_map = folium.Map(location=[user_lat, user_lon], zoom_start=14)
+hazard_cluster = MarkerCluster().add_to(route_map)
+
+def safe_float(val):
+    try:
+        return f"{float(val):.2f}"
+    except:
+        return "-"
+
+def hazard_level(score):
+    try:
+        score = float(score)
+        if score >= 0.66:
+            return "High"
+        elif score >= 0.33:
+            return "Medium"
+        else:
+            return "Low"
+    except:
+        return "Unknown"
+
+for _, row in df.iterrows():
+    label = row.get('hazard_label', 'Unknown')
+    hazard_score = row.get('predicted_hazard', 0)
+    popup_content = f"""
+    <b>Label:</b> {label}<br>
+    <b>Hazard Level:</b> {hazard_level(hazard_score)}<br>
+    <b>Humidity:</b> {safe_float(row.get('humidity'))}<br>
+    <b>Air Quality:</b> {safe_float(row.get('air_quality'))}<br>
+    <b>Road Quality:</b> {safe_float(row.get('road_quality'))}<br>
+    <b>Hazard Score:</b> {safe_float(hazard_score)}<br>
+    <b>Coordinates:</b> ({row['latitude']:.5f}, {row['longitude']:.5f})
+    """
+    folium.Marker(
+        location=(row['latitude'], row['longitude']),
+        popup=folium.Popup(popup_content, max_width=300),
+        icon=folium.Icon(color='blue' if label == 'Start' else 'purple' if label == 'Destination' else 'red' if label != 'safe' else 'green')
+    ).add_to(hazard_cluster)
+
+folium.PolyLine(
+    locations=route_df[['latitude', 'longitude']].values.tolist(),
+    color='darkblue', weight=5, popup="Safest Route"
+).add_to(route_map)
+
+# Step-by-step directions with hazard level
+text_directions = '<br>'.join([
+    f"Step {i+1}: Proceed to ({lat:.5f}, {lon:.5f}) - Hazard: {hazard_level(hazard)}"
+    for i, (lat, lon, hazard) in enumerate(zip(route_df['latitude'], route_df['longitude'], route_df['predicted_hazard']))
+])
+
+legend_html = f'''
+ <div style="position: fixed; bottom: 50px; left: 50px; width: 280px; height: 400px;
+ border:2px solid grey; z-index:9999; font-size:13px;
+ background-color:white; padding: 10px; overflow:auto">
+ <b>Legend</b><br>
+ <span style="color:red;">●</span> Hazard Zone<br>
+ <span style="color:green;">●</span> Safe Point<br>
+ <span style="color:blue;">●</span> Start Point<br>
+ <span style="color:purple;">●</span> Destination<br>
+ <span style="color:darkblue;">━</span> Safest Path<br><br>
+ <b>Travel Directions:</b><br>{text_directions}
+ </div>
+'''
+route_map.get_root().html.add_child(folium.Element(legend_html))
+
+# ------------------ OUTPUT ------------------
+route_map.save("output_map.html")
+files.download("output_map.html")
+
+output = {
+    "start_coordinates": [user_lat, user_lon],
+    "end_coordinates": [dest_lat, dest_lon],
+    "safest_route": route_df[['latitude', 'longitude']].values.tolist(),
+    "detected_hazards": df[['latitude', 'longitude', 'hazard_label']].to_dict(orient='records'),
+    "predicted_trend": pred[-1].tolist() if hasattr(pred[-1], 'tolist') else pred[-1]
+}
+print(json.dumps(output, indent=2))
