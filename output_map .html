@@ -1,0 +1,969 @@
+<!DOCTYPE html>
+<html>
+<head>
+    
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+    
+        <script>
+            L_NO_TOUCH = false;
+            L_DISABLE_3D = false;
+        </script>
+    
+    <style>html, body {width: 100%;height: 100%;margin: 0;padding: 0;}</style>
+    <style>#map {position:absolute;top:0;bottom:0;right:0;left:0;}</style>
+    <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css"/>
+    <link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap-glyphicons.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.2.0/css/all.min.css"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/python-visualization/folium/folium/templates/leaflet.awesome.rotate.min.css"/>
+    
+            <meta name="viewport" content="width=device-width,
+                initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+            <style>
+                #map_019ee49d31482269efcb281a9bdc0d4e {
+                    position: relative;
+                    width: 100.0%;
+                    height: 100.0%;
+                    left: 0.0%;
+                    top: 0.0%;
+                }
+                .leaflet-container { font-size: 1rem; }
+            </style>
+        
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.1.0/leaflet.markercluster.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.1.0/MarkerCluster.css"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.1.0/MarkerCluster.Default.css"/>
+</head>
+<body>
+    
+    
+ <div style="position: fixed; bottom: 50px; left: 50px; width: 280px; height: 400px;
+ border:2px solid grey; z-index:9999; font-size:13px;
+ background-color:white; padding: 10px; overflow:auto">
+ <b>Legend</b><br>
+ <span style="color:red;">●</span> Hazard Zone<br>
+ <span style="color:green;">●</span> Safe Point<br>
+ <span style="color:blue;">●</span> Start Point<br>
+ <span style="color:purple;">●</span> Destination<br>
+ <span style="color:darkblue;">━</span> Safest Path<br><br>
+ <b>Travel Directions:</b><br>Step 1: Proceed to (23.19812, 77.09550) - Hazard: Low<br>Step 2: Proceed to (23.19812, 77.09550) - Hazard: High<br>Step 3: Proceed to (23.04702, 76.86535) - Hazard: Low
+ </div>
+    
+            <div class="folium-map" id="map_019ee49d31482269efcb281a9bdc0d4e" ></div>
+        
+</body>
+<script>
+    
+    
+            var map_019ee49d31482269efcb281a9bdc0d4e = L.map(
+                "map_019ee49d31482269efcb281a9bdc0d4e",
+                {
+                    center: [23.19811641, 77.09549684],
+                    crs: L.CRS.EPSG3857,
+                    ...{
+  "zoom": 14,
+  "zoomControl": true,
+  "preferCanvas": false,
+}
+
+                }
+            );
+
+            
+
+        
+    
+            var tile_layer_0f7d79dcc36b3a6333d5cd34adc163af = L.tileLayer(
+                "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+                {
+  "minZoom": 0,
+  "maxZoom": 19,
+  "maxNativeZoom": 19,
+  "noWrap": false,
+  "attribution": "\u0026copy; \u003ca href=\"https://www.openstreetmap.org/copyright\"\u003eOpenStreetMap\u003c/a\u003e contributors",
+  "subdomains": "abc",
+  "detectRetina": false,
+  "tms": false,
+  "opacity": 1,
+}
+
+            );
+        
+    
+            tile_layer_0f7d79dcc36b3a6333d5cd34adc163af.addTo(map_019ee49d31482269efcb281a9bdc0d4e);
+        
+    
+            var marker_cluster_fc70df18c170c8d6d597260911e653a9 = L.markerClusterGroup(
+                {
+}
+            );
+        
+    
+            var marker_4371d6d151b464aca548e195bf801579 = L.marker(
+                [23.19811641, 77.09549684],
+                {
+}
+            ).addTo(marker_cluster_fc70df18c170c8d6d597260911e653a9);
+        
+    
+            var icon_2a35640fe5ab0ebf56ac4c572759a1fc = L.AwesomeMarkers.icon(
+                {
+  "markerColor": "red",
+  "iconColor": "white",
+  "icon": "info-sign",
+  "prefix": "glyphicon",
+  "extraClasses": "fa-rotate-0",
+}
+            );
+        
+    
+        var popup_18a6a48535363e606a56261ee753917e = L.popup({
+  "maxWidth": 300,
+});
+
+        
+            
+                var html_176c4a822be7024bad59369d322e3315 = $(`<div id="html_176c4a822be7024bad59369d322e3315" style="width: 100.0%; height: 100.0%;">     <b>Label:</b> flood<br>     <b>Hazard Level:</b> High<br>     <b>Humidity:</b> -<br>     <b>Air Quality:</b> -<br>     <b>Road Quality:</b> -<br>     <b>Hazard Score:</b> 1.00<br>     <b>Coordinates:</b> (23.19812, 77.09550)     </div>`)[0];
+                popup_18a6a48535363e606a56261ee753917e.setContent(html_176c4a822be7024bad59369d322e3315);
+            
+        
+
+        marker_4371d6d151b464aca548e195bf801579.bindPopup(popup_18a6a48535363e606a56261ee753917e)
+        ;
+
+        
+    
+    
+                marker_4371d6d151b464aca548e195bf801579.setIcon(icon_2a35640fe5ab0ebf56ac4c572759a1fc);
+            
+    
+            var marker_6a17a47b7e164c6defd545db7c08e9f5 = L.marker(
+                [23.19934566, 77.0964453],
+                {
+}
+            ).addTo(marker_cluster_fc70df18c170c8d6d597260911e653a9);
+        
+    
+            var icon_8b2c806c58ef4e1f57a4576111a120d9 = L.AwesomeMarkers.icon(
+                {
+  "markerColor": "red",
+  "iconColor": "white",
+  "icon": "info-sign",
+  "prefix": "glyphicon",
+  "extraClasses": "fa-rotate-0",
+}
+            );
+        
+    
+        var popup_a5635ba814d5bdbec7f4eb15a6b16b0f = L.popup({
+  "maxWidth": 300,
+});
+
+        
+            
+                var html_707d9c1606c39e50b82893801119940d = $(`<div id="html_707d9c1606c39e50b82893801119940d" style="width: 100.0%; height: 100.0%;">     <b>Label:</b> flood<br>     <b>Hazard Level:</b> High<br>     <b>Humidity:</b> -<br>     <b>Air Quality:</b> -<br>     <b>Road Quality:</b> -<br>     <b>Hazard Score:</b> 1.00<br>     <b>Coordinates:</b> (23.19935, 77.09645)     </div>`)[0];
+                popup_a5635ba814d5bdbec7f4eb15a6b16b0f.setContent(html_707d9c1606c39e50b82893801119940d);
+            
+        
+
+        marker_6a17a47b7e164c6defd545db7c08e9f5.bindPopup(popup_a5635ba814d5bdbec7f4eb15a6b16b0f)
+        ;
+
+        
+    
+    
+                marker_6a17a47b7e164c6defd545db7c08e9f5.setIcon(icon_8b2c806c58ef4e1f57a4576111a120d9);
+            
+    
+            var marker_21edccf283dcaa18d6ec59ad8e1e1615 = L.marker(
+                [23.19933594, 77.09465353],
+                {
+}
+            ).addTo(marker_cluster_fc70df18c170c8d6d597260911e653a9);
+        
+    
+            var icon_47a6679a3d560b6f731edf4f341405e3 = L.AwesomeMarkers.icon(
+                {
+  "markerColor": "red",
+  "iconColor": "white",
+  "icon": "info-sign",
+  "prefix": "glyphicon",
+  "extraClasses": "fa-rotate-0",
+}
+            );
+        
+    
+        var popup_3651c0b8eadbea7d62fcb704813e8a96 = L.popup({
+  "maxWidth": 300,
+});
+
+        
+            
+                var html_5a097f656bbbcae6bbaa68eb66a994dd = $(`<div id="html_5a097f656bbbcae6bbaa68eb66a994dd" style="width: 100.0%; height: 100.0%;">     <b>Label:</b> construction<br>     <b>Hazard Level:</b> Low<br>     <b>Humidity:</b> -<br>     <b>Air Quality:</b> -<br>     <b>Road Quality:</b> -<br>     <b>Hazard Score:</b> 0.00<br>     <b>Coordinates:</b> (23.19934, 77.09465)     </div>`)[0];
+                popup_3651c0b8eadbea7d62fcb704813e8a96.setContent(html_5a097f656bbbcae6bbaa68eb66a994dd);
+            
+        
+
+        marker_21edccf283dcaa18d6ec59ad8e1e1615.bindPopup(popup_3651c0b8eadbea7d62fcb704813e8a96)
+        ;
+
+        
+    
+    
+                marker_21edccf283dcaa18d6ec59ad8e1e1615.setIcon(icon_47a6679a3d560b6f731edf4f341405e3);
+            
+    
+            var marker_987c966326c88c67c34bd69a85694c9b = L.marker(
+                [23.19909661, 77.09623428],
+                {
+}
+            ).addTo(marker_cluster_fc70df18c170c8d6d597260911e653a9);
+        
+    
+            var icon_eaefded7d4fc8ba04b0a6b55e771407f = L.AwesomeMarkers.icon(
+                {
+  "markerColor": "green",
+  "iconColor": "white",
+  "icon": "info-sign",
+  "prefix": "glyphicon",
+  "extraClasses": "fa-rotate-0",
+}
+            );
+        
+    
+        var popup_447a501941008de7a4807635110a874d = L.popup({
+  "maxWidth": 300,
+});
+
+        
+            
+                var html_4fcafd72187134c9d37a0f48c7b119b8 = $(`<div id="html_4fcafd72187134c9d37a0f48c7b119b8" style="width: 100.0%; height: 100.0%;">     <b>Label:</b> safe<br>     <b>Hazard Level:</b> High<br>     <b>Humidity:</b> -<br>     <b>Air Quality:</b> -<br>     <b>Road Quality:</b> -<br>     <b>Hazard Score:</b> 2.00<br>     <b>Coordinates:</b> (23.19910, 77.09623)     </div>`)[0];
+                popup_447a501941008de7a4807635110a874d.setContent(html_4fcafd72187134c9d37a0f48c7b119b8);
+            
+        
+
+        marker_987c966326c88c67c34bd69a85694c9b.bindPopup(popup_447a501941008de7a4807635110a874d)
+        ;
+
+        
+    
+    
+                marker_987c966326c88c67c34bd69a85694c9b.setIcon(icon_eaefded7d4fc8ba04b0a6b55e771407f);
+            
+    
+            var marker_b9ca1d8b40eecf1ab581b332c2974da9 = L.marker(
+                [23.19868652, 77.094675],
+                {
+}
+            ).addTo(marker_cluster_fc70df18c170c8d6d597260911e653a9);
+        
+    
+            var icon_41cc1bf4cbd1392dbf35bf29b3772e19 = L.AwesomeMarkers.icon(
+                {
+  "markerColor": "green",
+  "iconColor": "white",
+  "icon": "info-sign",
+  "prefix": "glyphicon",
+  "extraClasses": "fa-rotate-0",
+}
+            );
+        
+    
+        var popup_0d9a4b35722218b1e3d571b7772d376a = L.popup({
+  "maxWidth": 300,
+});
+
+        
+            
+                var html_ad9262d632ac0932da7ed082181cd845 = $(`<div id="html_ad9262d632ac0932da7ed082181cd845" style="width: 100.0%; height: 100.0%;">     <b>Label:</b> safe<br>     <b>Hazard Level:</b> High<br>     <b>Humidity:</b> -<br>     <b>Air Quality:</b> -<br>     <b>Road Quality:</b> -<br>     <b>Hazard Score:</b> 2.00<br>     <b>Coordinates:</b> (23.19869, 77.09467)     </div>`)[0];
+                popup_0d9a4b35722218b1e3d571b7772d376a.setContent(html_ad9262d632ac0932da7ed082181cd845);
+            
+        
+
+        marker_b9ca1d8b40eecf1ab581b332c2974da9.bindPopup(popup_0d9a4b35722218b1e3d571b7772d376a)
+        ;
+
+        
+    
+    
+                marker_b9ca1d8b40eecf1ab581b332c2974da9.setIcon(icon_41cc1bf4cbd1392dbf35bf29b3772e19);
+            
+    
+            var marker_afdb4a16c68f651d16c75a6a38590bef = L.marker(
+                [23.1988029, 77.09501536],
+                {
+}
+            ).addTo(marker_cluster_fc70df18c170c8d6d597260911e653a9);
+        
+    
+            var icon_2d6eef498d186f276d48f372c9a94bf0 = L.AwesomeMarkers.icon(
+                {
+  "markerColor": "red",
+  "iconColor": "white",
+  "icon": "info-sign",
+  "prefix": "glyphicon",
+  "extraClasses": "fa-rotate-0",
+}
+            );
+        
+    
+        var popup_2fb8e2373adea50aea45a1ebf0a188e3 = L.popup({
+  "maxWidth": 300,
+});
+
+        
+            
+                var html_a78cc2054db788ffb8b26f173bf568e7 = $(`<div id="html_a78cc2054db788ffb8b26f173bf568e7" style="width: 100.0%; height: 100.0%;">     <b>Label:</b> flood<br>     <b>Hazard Level:</b> High<br>     <b>Humidity:</b> -<br>     <b>Air Quality:</b> -<br>     <b>Road Quality:</b> -<br>     <b>Hazard Score:</b> 1.00<br>     <b>Coordinates:</b> (23.19880, 77.09502)     </div>`)[0];
+                popup_2fb8e2373adea50aea45a1ebf0a188e3.setContent(html_a78cc2054db788ffb8b26f173bf568e7);
+            
+        
+
+        marker_afdb4a16c68f651d16c75a6a38590bef.bindPopup(popup_2fb8e2373adea50aea45a1ebf0a188e3)
+        ;
+
+        
+    
+    
+                marker_afdb4a16c68f651d16c75a6a38590bef.setIcon(icon_2d6eef498d186f276d48f372c9a94bf0);
+            
+    
+            var marker_c25b6a2a8fa710574b58c118f1c36543 = L.marker(
+                [23.19923242, 77.09600009],
+                {
+}
+            ).addTo(marker_cluster_fc70df18c170c8d6d597260911e653a9);
+        
+    
+            var icon_1b9f064870428fb9e89b12f63817d7e5 = L.AwesomeMarkers.icon(
+                {
+  "markerColor": "red",
+  "iconColor": "white",
+  "icon": "info-sign",
+  "prefix": "glyphicon",
+  "extraClasses": "fa-rotate-0",
+}
+            );
+        
+    
+        var popup_b217d428c4518eddb397efb9c0d6bb5d = L.popup({
+  "maxWidth": 300,
+});
+
+        
+            
+                var html_4039a321c7e7e95364b33802230a5bc1 = $(`<div id="html_4039a321c7e7e95364b33802230a5bc1" style="width: 100.0%; height: 100.0%;">     <b>Label:</b> construction<br>     <b>Hazard Level:</b> Low<br>     <b>Humidity:</b> -<br>     <b>Air Quality:</b> -<br>     <b>Road Quality:</b> -<br>     <b>Hazard Score:</b> 0.00<br>     <b>Coordinates:</b> (23.19923, 77.09600)     </div>`)[0];
+                popup_b217d428c4518eddb397efb9c0d6bb5d.setContent(html_4039a321c7e7e95364b33802230a5bc1);
+            
+        
+
+        marker_c25b6a2a8fa710574b58c118f1c36543.bindPopup(popup_b217d428c4518eddb397efb9c0d6bb5d)
+        ;
+
+        
+    
+    
+                marker_c25b6a2a8fa710574b58c118f1c36543.setIcon(icon_1b9f064870428fb9e89b12f63817d7e5);
+            
+    
+            var marker_2f79f041666bae0281043755c828a51c = L.marker(
+                [23.19838119, 77.09643445],
+                {
+}
+            ).addTo(marker_cluster_fc70df18c170c8d6d597260911e653a9);
+        
+    
+            var icon_d8879a133b37a79b97acd3de9a58d110 = L.AwesomeMarkers.icon(
+                {
+  "markerColor": "red",
+  "iconColor": "white",
+  "icon": "info-sign",
+  "prefix": "glyphicon",
+  "extraClasses": "fa-rotate-0",
+}
+            );
+        
+    
+        var popup_baf257e8af07e6e0b0501b992e2d2f39 = L.popup({
+  "maxWidth": 300,
+});
+
+        
+            
+                var html_dd658f2f9a17367d3a567bcf7d6e5269 = $(`<div id="html_dd658f2f9a17367d3a567bcf7d6e5269" style="width: 100.0%; height: 100.0%;">     <b>Label:</b> flood<br>     <b>Hazard Level:</b> High<br>     <b>Humidity:</b> -<br>     <b>Air Quality:</b> -<br>     <b>Road Quality:</b> -<br>     <b>Hazard Score:</b> 1.00<br>     <b>Coordinates:</b> (23.19838, 77.09643)     </div>`)[0];
+                popup_baf257e8af07e6e0b0501b992e2d2f39.setContent(html_dd658f2f9a17367d3a567bcf7d6e5269);
+            
+        
+
+        marker_2f79f041666bae0281043755c828a51c.bindPopup(popup_baf257e8af07e6e0b0501b992e2d2f39)
+        ;
+
+        
+    
+    
+                marker_2f79f041666bae0281043755c828a51c.setIcon(icon_d8879a133b37a79b97acd3de9a58d110);
+            
+    
+            var marker_43fc82f63c792451b43edf4e2fedd2f1 = L.marker(
+                [23.19978329, 77.09634623],
+                {
+}
+            ).addTo(marker_cluster_fc70df18c170c8d6d597260911e653a9);
+        
+    
+            var icon_df47f526b1839608bb14df92dcdbd059 = L.AwesomeMarkers.icon(
+                {
+  "markerColor": "red",
+  "iconColor": "white",
+  "icon": "info-sign",
+  "prefix": "glyphicon",
+  "extraClasses": "fa-rotate-0",
+}
+            );
+        
+    
+        var popup_ee10e5b96909dc8891a01aca8fc71d5b = L.popup({
+  "maxWidth": 300,
+});
+
+        
+            
+                var html_509c90394c02619d9ba6496565cc7b6f = $(`<div id="html_509c90394c02619d9ba6496565cc7b6f" style="width: 100.0%; height: 100.0%;">     <b>Label:</b> construction<br>     <b>Hazard Level:</b> Low<br>     <b>Humidity:</b> -<br>     <b>Air Quality:</b> -<br>     <b>Road Quality:</b> -<br>     <b>Hazard Score:</b> 0.00<br>     <b>Coordinates:</b> (23.19978, 77.09635)     </div>`)[0];
+                popup_ee10e5b96909dc8891a01aca8fc71d5b.setContent(html_509c90394c02619d9ba6496565cc7b6f);
+            
+        
+
+        marker_43fc82f63c792451b43edf4e2fedd2f1.bindPopup(popup_ee10e5b96909dc8891a01aca8fc71d5b)
+        ;
+
+        
+    
+    
+                marker_43fc82f63c792451b43edf4e2fedd2f1.setIcon(icon_df47f526b1839608bb14df92dcdbd059);
+            
+    
+            var marker_e62f8805137fa15bc798a4513f8c6249 = L.marker(
+                [23.1993255, 77.09541708],
+                {
+}
+            ).addTo(marker_cluster_fc70df18c170c8d6d597260911e653a9);
+        
+    
+            var icon_3f5e07d46cff28fa036a88e3594401be = L.AwesomeMarkers.icon(
+                {
+  "markerColor": "red",
+  "iconColor": "white",
+  "icon": "info-sign",
+  "prefix": "glyphicon",
+  "extraClasses": "fa-rotate-0",
+}
+            );
+        
+    
+        var popup_accfbcb832b2b624d16f5a2e92955d46 = L.popup({
+  "maxWidth": 300,
+});
+
+        
+            
+                var html_a5f6d9f94403332bbfa22f81c4107219 = $(`<div id="html_a5f6d9f94403332bbfa22f81c4107219" style="width: 100.0%; height: 100.0%;">     <b>Label:</b> flood<br>     <b>Hazard Level:</b> High<br>     <b>Humidity:</b> -<br>     <b>Air Quality:</b> -<br>     <b>Road Quality:</b> -<br>     <b>Hazard Score:</b> 1.00<br>     <b>Coordinates:</b> (23.19933, 77.09542)     </div>`)[0];
+                popup_accfbcb832b2b624d16f5a2e92955d46.setContent(html_a5f6d9f94403332bbfa22f81c4107219);
+            
+        
+
+        marker_e62f8805137fa15bc798a4513f8c6249.bindPopup(popup_accfbcb832b2b624d16f5a2e92955d46)
+        ;
+
+        
+    
+    
+                marker_e62f8805137fa15bc798a4513f8c6249.setIcon(icon_3f5e07d46cff28fa036a88e3594401be);
+            
+    
+            var marker_72f961f004d8b4653710d4dec59f1577 = L.marker(
+                [23.1998514, 77.09462373],
+                {
+}
+            ).addTo(marker_cluster_fc70df18c170c8d6d597260911e653a9);
+        
+    
+            var icon_adccd6e847b70958d930d246f3af05be = L.AwesomeMarkers.icon(
+                {
+  "markerColor": "red",
+  "iconColor": "white",
+  "icon": "info-sign",
+  "prefix": "glyphicon",
+  "extraClasses": "fa-rotate-0",
+}
+            );
+        
+    
+        var popup_a78b34313dd3c4be71bba725854b892b = L.popup({
+  "maxWidth": 300,
+});
+
+        
+            
+                var html_fd9b5cfdd8eb0702828c9b9e226b9180 = $(`<div id="html_fd9b5cfdd8eb0702828c9b9e226b9180" style="width: 100.0%; height: 100.0%;">     <b>Label:</b> construction<br>     <b>Hazard Level:</b> Low<br>     <b>Humidity:</b> -<br>     <b>Air Quality:</b> -<br>     <b>Road Quality:</b> -<br>     <b>Hazard Score:</b> 0.00<br>     <b>Coordinates:</b> (23.19985, 77.09462)     </div>`)[0];
+                popup_a78b34313dd3c4be71bba725854b892b.setContent(html_fd9b5cfdd8eb0702828c9b9e226b9180);
+            
+        
+
+        marker_72f961f004d8b4653710d4dec59f1577.bindPopup(popup_a78b34313dd3c4be71bba725854b892b)
+        ;
+
+        
+    
+    
+                marker_72f961f004d8b4653710d4dec59f1577.setIcon(icon_adccd6e847b70958d930d246f3af05be);
+            
+    
+            var marker_fd7e1f4c24a584e75800d7acb9d5b275 = L.marker(
+                [23.19871054, 77.09496679],
+                {
+}
+            ).addTo(marker_cluster_fc70df18c170c8d6d597260911e653a9);
+        
+    
+            var icon_7a7b10a004bd1f0b3f8dc4063ed04312 = L.AwesomeMarkers.icon(
+                {
+  "markerColor": "red",
+  "iconColor": "white",
+  "icon": "info-sign",
+  "prefix": "glyphicon",
+  "extraClasses": "fa-rotate-0",
+}
+            );
+        
+    
+        var popup_cf69b6721575ec784793b55959b40fe1 = L.popup({
+  "maxWidth": 300,
+});
+
+        
+            
+                var html_75d602cf2b3b698991af6833a0bb736f = $(`<div id="html_75d602cf2b3b698991af6833a0bb736f" style="width: 100.0%; height: 100.0%;">     <b>Label:</b> flood<br>     <b>Hazard Level:</b> High<br>     <b>Humidity:</b> -<br>     <b>Air Quality:</b> -<br>     <b>Road Quality:</b> -<br>     <b>Hazard Score:</b> 1.00<br>     <b>Coordinates:</b> (23.19871, 77.09497)     </div>`)[0];
+                popup_cf69b6721575ec784793b55959b40fe1.setContent(html_75d602cf2b3b698991af6833a0bb736f);
+            
+        
+
+        marker_fd7e1f4c24a584e75800d7acb9d5b275.bindPopup(popup_cf69b6721575ec784793b55959b40fe1)
+        ;
+
+        
+    
+    
+                marker_fd7e1f4c24a584e75800d7acb9d5b275.setIcon(icon_7a7b10a004bd1f0b3f8dc4063ed04312);
+            
+    
+            var marker_d4ac4957aac5ae81eb1cfb5a0dbfaed6 = L.marker(
+                [23.19900619, 77.09512706],
+                {
+}
+            ).addTo(marker_cluster_fc70df18c170c8d6d597260911e653a9);
+        
+    
+            var icon_93d408c0cf8241f1036df871551f7221 = L.AwesomeMarkers.icon(
+                {
+  "markerColor": "red",
+  "iconColor": "white",
+  "icon": "info-sign",
+  "prefix": "glyphicon",
+  "extraClasses": "fa-rotate-0",
+}
+            );
+        
+    
+        var popup_08103a05e60625e00b38e461ca86763d = L.popup({
+  "maxWidth": 300,
+});
+
+        
+            
+                var html_f28a0195bc65787495510d4756635c5a = $(`<div id="html_f28a0195bc65787495510d4756635c5a" style="width: 100.0%; height: 100.0%;">     <b>Label:</b> flood<br>     <b>Hazard Level:</b> High<br>     <b>Humidity:</b> -<br>     <b>Air Quality:</b> -<br>     <b>Road Quality:</b> -<br>     <b>Hazard Score:</b> 1.00<br>     <b>Coordinates:</b> (23.19901, 77.09513)     </div>`)[0];
+                popup_08103a05e60625e00b38e461ca86763d.setContent(html_f28a0195bc65787495510d4756635c5a);
+            
+        
+
+        marker_d4ac4957aac5ae81eb1cfb5a0dbfaed6.bindPopup(popup_08103a05e60625e00b38e461ca86763d)
+        ;
+
+        
+    
+    
+                marker_d4ac4957aac5ae81eb1cfb5a0dbfaed6.setIcon(icon_93d408c0cf8241f1036df871551f7221);
+            
+    
+            var marker_42a9d3c486e31dbf5f83bc36f531a004 = L.marker(
+                [23.19981506, 77.09534128],
+                {
+}
+            ).addTo(marker_cluster_fc70df18c170c8d6d597260911e653a9);
+        
+    
+            var icon_4965a091e3ec8dceb344d863913c6f34 = L.AwesomeMarkers.icon(
+                {
+  "markerColor": "green",
+  "iconColor": "white",
+  "icon": "info-sign",
+  "prefix": "glyphicon",
+  "extraClasses": "fa-rotate-0",
+}
+            );
+        
+    
+        var popup_d8b2718c4e9539a5afb9194fe6d3c628 = L.popup({
+  "maxWidth": 300,
+});
+
+        
+            
+                var html_be998f83d013ecfa2552705203840b3f = $(`<div id="html_be998f83d013ecfa2552705203840b3f" style="width: 100.0%; height: 100.0%;">     <b>Label:</b> safe<br>     <b>Hazard Level:</b> High<br>     <b>Humidity:</b> -<br>     <b>Air Quality:</b> -<br>     <b>Road Quality:</b> -<br>     <b>Hazard Score:</b> 2.00<br>     <b>Coordinates:</b> (23.19982, 77.09534)     </div>`)[0];
+                popup_d8b2718c4e9539a5afb9194fe6d3c628.setContent(html_be998f83d013ecfa2552705203840b3f);
+            
+        
+
+        marker_42a9d3c486e31dbf5f83bc36f531a004.bindPopup(popup_d8b2718c4e9539a5afb9194fe6d3c628)
+        ;
+
+        
+    
+    
+                marker_42a9d3c486e31dbf5f83bc36f531a004.setIcon(icon_4965a091e3ec8dceb344d863913c6f34);
+            
+    
+            var marker_c67bd29c817728f97f813f8d9dcd1d1d = L.marker(
+                [23.19802444, 77.09456073],
+                {
+}
+            ).addTo(marker_cluster_fc70df18c170c8d6d597260911e653a9);
+        
+    
+            var icon_91e37c99442b4812e843e8a714ffa862 = L.AwesomeMarkers.icon(
+                {
+  "markerColor": "red",
+  "iconColor": "white",
+  "icon": "info-sign",
+  "prefix": "glyphicon",
+  "extraClasses": "fa-rotate-0",
+}
+            );
+        
+    
+        var popup_f75b916539718d07a4b8c7b0b8d87d31 = L.popup({
+  "maxWidth": 300,
+});
+
+        
+            
+                var html_5e8e67db5a4e88455141846f9c215998 = $(`<div id="html_5e8e67db5a4e88455141846f9c215998" style="width: 100.0%; height: 100.0%;">     <b>Label:</b> flood<br>     <b>Hazard Level:</b> High<br>     <b>Humidity:</b> -<br>     <b>Air Quality:</b> -<br>     <b>Road Quality:</b> -<br>     <b>Hazard Score:</b> 1.00<br>     <b>Coordinates:</b> (23.19802, 77.09456)     </div>`)[0];
+                popup_f75b916539718d07a4b8c7b0b8d87d31.setContent(html_5e8e67db5a4e88455141846f9c215998);
+            
+        
+
+        marker_c67bd29c817728f97f813f8d9dcd1d1d.bindPopup(popup_f75b916539718d07a4b8c7b0b8d87d31)
+        ;
+
+        
+    
+    
+                marker_c67bd29c817728f97f813f8d9dcd1d1d.setIcon(icon_91e37c99442b4812e843e8a714ffa862);
+            
+    
+            var marker_292219fe60c42a36924505f506c10186 = L.marker(
+                [23.19943316, 77.09529398],
+                {
+}
+            ).addTo(marker_cluster_fc70df18c170c8d6d597260911e653a9);
+        
+    
+            var icon_b431dcc7af91203bc91b9c041ba5831a = L.AwesomeMarkers.icon(
+                {
+  "markerColor": "red",
+  "iconColor": "white",
+  "icon": "info-sign",
+  "prefix": "glyphicon",
+  "extraClasses": "fa-rotate-0",
+}
+            );
+        
+    
+        var popup_e610449a2784012ad9d6d208a54a8e5b = L.popup({
+  "maxWidth": 300,
+});
+
+        
+            
+                var html_3087983d5e2a96a1f2f44b4b64e3f5fa = $(`<div id="html_3087983d5e2a96a1f2f44b4b64e3f5fa" style="width: 100.0%; height: 100.0%;">     <b>Label:</b> construction<br>     <b>Hazard Level:</b> Low<br>     <b>Humidity:</b> -<br>     <b>Air Quality:</b> -<br>     <b>Road Quality:</b> -<br>     <b>Hazard Score:</b> 0.00<br>     <b>Coordinates:</b> (23.19943, 77.09529)     </div>`)[0];
+                popup_e610449a2784012ad9d6d208a54a8e5b.setContent(html_3087983d5e2a96a1f2f44b4b64e3f5fa);
+            
+        
+
+        marker_292219fe60c42a36924505f506c10186.bindPopup(popup_e610449a2784012ad9d6d208a54a8e5b)
+        ;
+
+        
+    
+    
+                marker_292219fe60c42a36924505f506c10186.setIcon(icon_b431dcc7af91203bc91b9c041ba5831a);
+            
+    
+            var marker_5b08a2ab5687d15d96a058b7f463adf4 = L.marker(
+                [23.19848081, 77.09462075],
+                {
+}
+            ).addTo(marker_cluster_fc70df18c170c8d6d597260911e653a9);
+        
+    
+            var icon_ec50e42d495211fc9506f7a719307efe = L.AwesomeMarkers.icon(
+                {
+  "markerColor": "green",
+  "iconColor": "white",
+  "icon": "info-sign",
+  "prefix": "glyphicon",
+  "extraClasses": "fa-rotate-0",
+}
+            );
+        
+    
+        var popup_8eba2318dd37bf62fd9914022cdd82ab = L.popup({
+  "maxWidth": 300,
+});
+
+        
+            
+                var html_4c99fe462e9ae28bebd3f4cab4c06a9f = $(`<div id="html_4c99fe462e9ae28bebd3f4cab4c06a9f" style="width: 100.0%; height: 100.0%;">     <b>Label:</b> safe<br>     <b>Hazard Level:</b> High<br>     <b>Humidity:</b> -<br>     <b>Air Quality:</b> -<br>     <b>Road Quality:</b> -<br>     <b>Hazard Score:</b> 2.00<br>     <b>Coordinates:</b> (23.19848, 77.09462)     </div>`)[0];
+                popup_8eba2318dd37bf62fd9914022cdd82ab.setContent(html_4c99fe462e9ae28bebd3f4cab4c06a9f);
+            
+        
+
+        marker_5b08a2ab5687d15d96a058b7f463adf4.bindPopup(popup_8eba2318dd37bf62fd9914022cdd82ab)
+        ;
+
+        
+    
+    
+                marker_5b08a2ab5687d15d96a058b7f463adf4.setIcon(icon_ec50e42d495211fc9506f7a719307efe);
+            
+    
+            var marker_3fae5c4cb4b5fc3f2df69dd24fc3a601 = L.marker(
+                [23.1991043, 77.09596024],
+                {
+}
+            ).addTo(marker_cluster_fc70df18c170c8d6d597260911e653a9);
+        
+    
+            var icon_145829a7c9be58160be90e10b7b59c7c = L.AwesomeMarkers.icon(
+                {
+  "markerColor": "red",
+  "iconColor": "white",
+  "icon": "info-sign",
+  "prefix": "glyphicon",
+  "extraClasses": "fa-rotate-0",
+}
+            );
+        
+    
+        var popup_31549ef017b4680d3a8bfd10fb21ec11 = L.popup({
+  "maxWidth": 300,
+});
+
+        
+            
+                var html_174e103924b9a90f249653e71d60d373 = $(`<div id="html_174e103924b9a90f249653e71d60d373" style="width: 100.0%; height: 100.0%;">     <b>Label:</b> flood<br>     <b>Hazard Level:</b> High<br>     <b>Humidity:</b> -<br>     <b>Air Quality:</b> -<br>     <b>Road Quality:</b> -<br>     <b>Hazard Score:</b> 1.00<br>     <b>Coordinates:</b> (23.19910, 77.09596)     </div>`)[0];
+                popup_31549ef017b4680d3a8bfd10fb21ec11.setContent(html_174e103924b9a90f249653e71d60d373);
+            
+        
+
+        marker_3fae5c4cb4b5fc3f2df69dd24fc3a601.bindPopup(popup_31549ef017b4680d3a8bfd10fb21ec11)
+        ;
+
+        
+    
+    
+                marker_3fae5c4cb4b5fc3f2df69dd24fc3a601.setIcon(icon_145829a7c9be58160be90e10b7b59c7c);
+            
+    
+            var marker_5ad4fab69fa380aae7fe07758cc535c5 = L.marker(
+                [23.1998421, 77.09572035],
+                {
+}
+            ).addTo(marker_cluster_fc70df18c170c8d6d597260911e653a9);
+        
+    
+            var icon_09dc386fd8abbb3e9672d8eb830e8126 = L.AwesomeMarkers.icon(
+                {
+  "markerColor": "red",
+  "iconColor": "white",
+  "icon": "info-sign",
+  "prefix": "glyphicon",
+  "extraClasses": "fa-rotate-0",
+}
+            );
+        
+    
+        var popup_2fa8035c0c944864f81a1f61f0201e64 = L.popup({
+  "maxWidth": 300,
+});
+
+        
+            
+                var html_c7d7fcede6457a1145e5a8a79537cc6c = $(`<div id="html_c7d7fcede6457a1145e5a8a79537cc6c" style="width: 100.0%; height: 100.0%;">     <b>Label:</b> flood<br>     <b>Hazard Level:</b> High<br>     <b>Humidity:</b> -<br>     <b>Air Quality:</b> -<br>     <b>Road Quality:</b> -<br>     <b>Hazard Score:</b> 1.00<br>     <b>Coordinates:</b> (23.19984, 77.09572)     </div>`)[0];
+                popup_2fa8035c0c944864f81a1f61f0201e64.setContent(html_c7d7fcede6457a1145e5a8a79537cc6c);
+            
+        
+
+        marker_5ad4fab69fa380aae7fe07758cc535c5.bindPopup(popup_2fa8035c0c944864f81a1f61f0201e64)
+        ;
+
+        
+    
+    
+                marker_5ad4fab69fa380aae7fe07758cc535c5.setIcon(icon_09dc386fd8abbb3e9672d8eb830e8126);
+            
+    
+            var marker_885d6ca606387abe6523de13d8287753 = L.marker(
+                [23.19797837, 77.09550433],
+                {
+}
+            ).addTo(marker_cluster_fc70df18c170c8d6d597260911e653a9);
+        
+    
+            var icon_83d4177caa70cdff54b71af366b1b9e7 = L.AwesomeMarkers.icon(
+                {
+  "markerColor": "red",
+  "iconColor": "white",
+  "icon": "info-sign",
+  "prefix": "glyphicon",
+  "extraClasses": "fa-rotate-0",
+}
+            );
+        
+    
+        var popup_8b1df22a2398b30cd3812d9ebd1ca8ab = L.popup({
+  "maxWidth": 300,
+});
+
+        
+            
+                var html_33f08e707c1e44f4c0ffeffcc27c0090 = $(`<div id="html_33f08e707c1e44f4c0ffeffcc27c0090" style="width: 100.0%; height: 100.0%;">     <b>Label:</b> flood<br>     <b>Hazard Level:</b> High<br>     <b>Humidity:</b> -<br>     <b>Air Quality:</b> -<br>     <b>Road Quality:</b> -<br>     <b>Hazard Score:</b> 1.00<br>     <b>Coordinates:</b> (23.19798, 77.09550)     </div>`)[0];
+                popup_8b1df22a2398b30cd3812d9ebd1ca8ab.setContent(html_33f08e707c1e44f4c0ffeffcc27c0090);
+            
+        
+
+        marker_885d6ca606387abe6523de13d8287753.bindPopup(popup_8b1df22a2398b30cd3812d9ebd1ca8ab)
+        ;
+
+        
+    
+    
+                marker_885d6ca606387abe6523de13d8287753.setIcon(icon_83d4177caa70cdff54b71af366b1b9e7);
+            
+    
+            var marker_c4f91a2725d3d752d6383fb5da4174eb = L.marker(
+                [23.19811641, 77.09549684],
+                {
+}
+            ).addTo(marker_cluster_fc70df18c170c8d6d597260911e653a9);
+        
+    
+            var icon_ec556bf2373c025dec356438675dced5 = L.AwesomeMarkers.icon(
+                {
+  "markerColor": "blue",
+  "iconColor": "white",
+  "icon": "info-sign",
+  "prefix": "glyphicon",
+  "extraClasses": "fa-rotate-0",
+}
+            );
+        
+    
+        var popup_e4fc782ef004f9c65784017dc0dd3ba3 = L.popup({
+  "maxWidth": 300,
+});
+
+        
+            
+                var html_587f36c411f6cc254673586aaf4c8086 = $(`<div id="html_587f36c411f6cc254673586aaf4c8086" style="width: 100.0%; height: 100.0%;">     <b>Label:</b> Start<br>     <b>Hazard Level:</b> Low<br>     <b>Humidity:</b> -<br>     <b>Air Quality:</b> -<br>     <b>Road Quality:</b> -<br>     <b>Hazard Score:</b> 0.00<br>     <b>Coordinates:</b> (23.19812, 77.09550)     </div>`)[0];
+                popup_e4fc782ef004f9c65784017dc0dd3ba3.setContent(html_587f36c411f6cc254673586aaf4c8086);
+            
+        
+
+        marker_c4f91a2725d3d752d6383fb5da4174eb.bindPopup(popup_e4fc782ef004f9c65784017dc0dd3ba3)
+        ;
+
+        
+    
+    
+                marker_c4f91a2725d3d752d6383fb5da4174eb.setIcon(icon_ec556bf2373c025dec356438675dced5);
+            
+    
+            var marker_f033ef0a757760180826658529b46295 = L.marker(
+                [23.04702, 76.86535],
+                {
+}
+            ).addTo(marker_cluster_fc70df18c170c8d6d597260911e653a9);
+        
+    
+            var icon_339cb8da3fb8e416eb27f5aed701c048 = L.AwesomeMarkers.icon(
+                {
+  "markerColor": "purple",
+  "iconColor": "white",
+  "icon": "info-sign",
+  "prefix": "glyphicon",
+  "extraClasses": "fa-rotate-0",
+}
+            );
+        
+    
+        var popup_57788cca3683e0444dae3a9749f8994a = L.popup({
+  "maxWidth": 300,
+});
+
+        
+            
+                var html_8def9887ec522c01760fb51d7198999b = $(`<div id="html_8def9887ec522c01760fb51d7198999b" style="width: 100.0%; height: 100.0%;">     <b>Label:</b> Destination<br>     <b>Hazard Level:</b> Low<br>     <b>Humidity:</b> -<br>     <b>Air Quality:</b> -<br>     <b>Road Quality:</b> -<br>     <b>Hazard Score:</b> 0.00<br>     <b>Coordinates:</b> (23.04702, 76.86535)     </div>`)[0];
+                popup_57788cca3683e0444dae3a9749f8994a.setContent(html_8def9887ec522c01760fb51d7198999b);
+            
+        
+
+        marker_f033ef0a757760180826658529b46295.bindPopup(popup_57788cca3683e0444dae3a9749f8994a)
+        ;
+
+        
+    
+    
+                marker_f033ef0a757760180826658529b46295.setIcon(icon_339cb8da3fb8e416eb27f5aed701c048);
+            
+    
+            marker_cluster_fc70df18c170c8d6d597260911e653a9.addTo(map_019ee49d31482269efcb281a9bdc0d4e);
+        
+    
+            var poly_line_4f9c8b75d1ab9460e9de29e6bfa4c933 = L.polyline(
+                [[23.19811641, 77.09549684], [23.19811641, 77.09549684], [23.04702, 76.86535]],
+                {"bubblingMouseEvents": true, "color": "darkblue", "dashArray": null, "dashOffset": null, "fill": false, "fillColor": "darkblue", "fillOpacity": 0.2, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "noClip": false, "opacity": 1.0, "smoothFactor": 1.0, "stroke": true, "weight": 5}
+            ).addTo(map_019ee49d31482269efcb281a9bdc0d4e);
+        
+    
+        var popup_3d5b919529162e5c2f0be37b83316e33 = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_938df252183f9237c720eb10f90fdad9 = $(`<div id="html_938df252183f9237c720eb10f90fdad9" style="width: 100.0%; height: 100.0%;">Safest Route</div>`)[0];
+                popup_3d5b919529162e5c2f0be37b83316e33.setContent(html_938df252183f9237c720eb10f90fdad9);
+            
+        
+
+        poly_line_4f9c8b75d1ab9460e9de29e6bfa4c933.bindPopup(popup_3d5b919529162e5c2f0be37b83316e33)
+        ;
+
+        
+    
+</script>
+</html>
