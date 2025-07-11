@@ -1,0 +1,160 @@
+import pandas as pd
+import networkx as nx
+import heapq
+import math
+import random
+import folium
+import os
+import webbrowser
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import accuracy_score
+from sklearn.preprocessing import StandardScaler
+
+# **Haversine Distance Calculation (to measure distances)**
+def haversine(lat1, lon1, lat2, lon2):
+    R = 6371  # Earth radius in km
+    dlat = math.radians(lat2 - lat1)
+    dlon = math.radians(lon2 - lon1)
+    a = math.sin(dlat/2)**2 + math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.sin(dlon/2)**2
+    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1-a))
+    return R * c
+
+# **A* Algorithm for Safe Route**
+def a_star(graph, start, end, hazards):
+    open_set = []
+    heapq.heappush(open_set, (0, start))
+    came_from = {}
+    g_score = {node: float('inf') for node in graph.nodes}
+    g_score[start] = 0
+    f_score = {node: float('inf') for node in graph.nodes}
+    f_score[start] = haversine(*start, *end)
+
+    while open_set:
+        _, current = heapq.heappop(open_set)
+
+        if current == end:
+            path = []
+            while current in came_from:
+                path.append(current)
+                current = came_from[current]
+            path.append(start)
+            return path[::-1]  # Reverse path
+
+        for neighbor in graph.neighbors(current):
+            if neighbor in hazards:
+                continue
+
+            tentative_g_score = g_score[current] + graph[current][neighbor]['weight']
+
+            if tentative_g_score < g_score[neighbor]:
+                came_from[neighbor] = current
+                g_score[neighbor] = tentative_g_score
+                f_score[neighbor] = tentative_g_score + haversine(*neighbor, *end)
+                heapq.heappush(open_set, (f_score[neighbor], neighbor))
+
+    return None  # No path found
+
+# Function to Provide Turn-by-Turn Directions
+def get_directions(route):
+    directions = []
+    for i in range(1, len(route) - 1):
+        lat1, lon1 = route[i - 1]
+        lat2, lon2 = route[i]
+        lat3, lon3 = route[i + 1]
+
+        dx1, dy1 = lat2 - lat1, lon2 - lon1
+        dx2, dy2 = lat3 - lat2, lon3 - lon2
+
+        if dx1 * dy2 - dx2 * dy1 > 0:
+            turn = "➡️ Turn RIGHT"
+        elif dx1 * dy2 - dx2 * dy1 < 0:
+            turn = "⬅️ Turn LEFT"
+        else:
+            turn = "⬆️ Go STRAIGHT"
+
+        directions.append(f"{turn} at {lat2:.4f}, {lon2:.4f}")
+
+    return directions
+
+# **Load Navigation Dataset**
+csv_file_path = "/content/cleaned datasheet4.csv"  # Change to actual file path
+df = pd.read_csv(csv_file_path)
+
+# **Convert Categorical Data to Numerical**
+df["Hazard Predicted"] = df["hazard_detected"].map({"No": 0, "Yes": 1})
+df["Weather Impact"] = df[["weather_Clear", "weather_Foggy", "weather_Overcast", "weather_Rainy"]].sum(axis=1)
+df["Road Impact"] = df[["feature_extracted_Road surface", "feature_extracted_Temperature distribution", "feature_extracted_Traffic flow"]].sum(axis=1)
+df["Hazard Type"] = df["hazard_type"].map({
+    "No Hazard": 0, "Roadblock": 1, "Accident": 2, "Flooded Road": 3, "Traffic Jam": 4, "Low Visibility": 5
+})
+
+# **Standardize Data**
+scaler = StandardScaler()
+df[["Weather Impact", "Road Impact", "Hazard Type"]] = scaler.fit_transform(df[["Weather Impact", "Road Impact", "Hazard Type"]])
+
+# **Train ML Model for Hazard Prediction**
+features = ["Weather Impact", "Road Impact", "Hazard Type"]
+target = "Hazard Predicted"
+
+X_train, X_test, y_train, y_test = train_test_split(df[features], df[target], test_size=0.2, random_state=42)
+
+clf = RandomForestClassifier(n_estimators=500, max_depth=15, random_state=42)
+clf.fit(X_train, y_train)
+
+# **Predict Hazards**
+df["Predicted Hazard"] = clf.predict(df[features])
+
+# **Calculate Accuracy**
+y_pred = clf.predict(X_test)
+accuracy = accuracy_score(y_test, y_pred)
+print(f"\n✅ Hazard Prediction Model Accuracy: {accuracy * 100:.2f}%")
+
+# **Build Road Graph**
+G = nx.Graph()
+for _, row in df.iterrows():
+    node = (row["latitude"], row["longitude"])
+    G.add_node(node)
+
+nodes_list = list(G.nodes)
+for i in range(len(nodes_list)):
+    for j in range(i + 1, len(nodes_list)):
+        dist = haversine(*nodes_list[i], *nodes_list[j])
+        risk_factor = 1 + df.loc[i, "Predicted Hazard"] * 5  # Increase weight if hazard exists
+        G.add_edge(nodes_list[i], nodes_list[j], weight=dist * risk_factor)
+
+# **Find Safe Route**
+start = (23.2691, 77.4234)  # Example Start Point
+end = (23.3985, 77.5529)  # Example End Point
+hazards = {(row["latitude"], row["longitude"]) for _, row in df.iterrows() if row["Predicted Hazard"] == 1}
+
+safe_route = a_star(G, start, end, hazards)
+directions = get_directions(safe_route)
+
+# **Display Route on Map**
+map_route = folium.Map(location=start, zoom_start=14)
+
+# **Mark Hazard Points**
+for _, row in df.iterrows():
+    folium.Marker(
+        location=(row["latitude"], row["longitude"]),
+        popup=f"Hazard: {row['hazard_type']}",
+        icon=folium.Icon(color="red" if row["Predicted Hazard"] else "blue"),
+    ).add_to(map_route)
+
+# **Draw Safe Route**
+if safe_route:
+    folium.PolyLine(safe_route, color="green", weight=4).add_to(map_route)
+    print("\n✅ Safe Route Map saved as 'Safe_Route_Map.html'.")
+else:
+    print("\n⚠️ No Safe Route Found!")
+
+# **Save & Open Map**
+map_route.save("Safe_Route_Map.html")
+file_path = os.path.abspath("Safe_Route_Map.html")
+webbrowser.open("file://" + file_path)  # Opens Map in Browser
+
+# **Print Turn-by-Turn Directions**
+print("\n🗺️ Navigation Instructions:")
+for step in directions:
+    print(step)
